@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+    <title>DataTable Companies</title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+    <script src="../Scripts/init.js"></script>
+    <style type="text/css">
+
+        button {
+            margin-left: 10px;
+        }
+
+        .colorDiv {
+            height: 30px;
+            width: 70px;
+            border: 2px solid black
+        }
+
+        #newBTN {
+            background-color: blueviolet;
+            margin-bottom: 10px;
+        }
+
+        #div_img img {
+            width: 200px;
+            height: 200px;
+        }
+    </style>
+    <link href="../CSS/Design.css" rel="stylesheet" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+
+
+    <script>
+
+        // will run when the document is ready
+        $(document).ready(function () {
+            init();
+            show = false;
+            localStorage.removeItem("direct");
+            mode = "";
+
+            $("#cancelSaveBTN").on("click", function () {
+                company = null;
+                $("#editDiv").hide();
+                $(".imageBtn").prop("disabled", false);
+            });
+
+
+            // once the document is ready we fetch a list of cars from the server
+            ajaxCall("GET", "../api/Companies", "", getSuccess, error);
+
+            $("#Form").submit(onSubmitFunc); // wire the submit event to a function called f1
+
+            $("#editDiv").hide();
+
+            buttonEvents();
+        });
+        // wire all the buttons to their functions
+        function buttonEvents() {
+
+            $(document).on("click", ".editBtn", function () {
+                mode = "edit";
+                markSelected(this);
+                $("#editDiv").show();
+                $(".imageBtn").attr("disabled", "true");
+                $("#editDiv :input").prop("disabled", false); // edit mode: enable all controls in the form
+                populateFields(this.getAttribute('data-companyId')); // fill the form fields according to the selected row
+                $("#password").val("");
+                $("#password_v").val("");
+            });
+
+            $(document).on("click", ".viewBtn", function () {
+                mode = "view";
+                markSelected(this);
+                $(".imageBtn").prop("disabled", true);
+                $("#editDiv").show();
+                $("#editDiv :input").attr("disabled", "disabled"); // view mode: disable all controls in the form
+                populateFields(this.getAttribute('data-companyId'));
+            });
+
+            $(document).on("click", ".deleteBtn", function () {
+                mode = "delete";
+                markSelected(this);
+                var companyId = this.getAttribute('data-companyId');
+                swal({ // this will open a dialouge
+                    title: "Are you sure ??",
+                    text: "",
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: true
+                })
+                    .then(function (willDelete) {
+                        if (willDelete) DeleteCompany(companyId);
+                        else swal("Not Deleted!");
+                    });
+            });
+        }
+        // mark the selected row
+        function markSelected(btn) {
+            $("#companiesTable tr").removeClass("selected"); // remove seleced class from rows that were selected before
+            row = (btn.parentNode).parentNode; // button is in TD which is in Row
+            row.className = 'selected'; // mark as selected
+        }
+        // Delete a company from the server
+        function DeleteCompany(id) {
+            let company = getCompany(id);
+            let user_name = company.User_name;
+            let user_online = JSON.parse(localStorage.getItem("user_online"));
+            if (user_online.userName.localeCompare(user_name) == 0) {
+                localStorage.removeItem("user_online");
+            }
+            ajaxCall("DELETE", `../api/Companies/${user_name}`, "", deleteSuccess, error);
+        }
+        // edit the company
+        function onSubmitFunc() {
+            var data = new FormData();
+            var files = $("#logo").get(0).files;
+
+            // Add the uploaded file to the form data collection
+            if (files.length > 0) {
+                for (f = 0; f < files.length; f++) {
+                    data.append("UploadedImage", files[f]);
+                }
+                data.append("name", $("#Company_Name").val()); // aopend what ever data you want to send along with the files. See how you extract it in the controller.
+            }
+
+            // Ajax upload
+            $.ajax({
+                type: "POST",
+                url: "../api/FileUpload",
+                contentType: false,
+                processData: false,
+                data: data,
+                success: PostImageSCB,
+                error: PostImageECB
+            });
+
+            return false;
+        }
+        // if the ajaxcall for uploading the image succeeded, upload the company
+        function PostImageSCB(path) {
+            let countries = document.getElementById("country");
+            let years = document.getElementById("year");
+            let country = countries.options[countries.selectedIndex];
+            let year = years.options[years.selectedIndex].value;
+            let halls = document.getElementById("halls").value;
+            let user_name = document.getElementById("username");
+            let password = document.getElementById("password");
+            let company_name = document.getElementById("Company_Name");
+
+            let companyToSave = {
+                User_name: user_name.value,
+                Password: password.value,
+                Company_name: company_name.value,
+                Image_path: path[0],
+                Country_name: country.text,
+                Country_id: country.value,
+                Year: year,
+                Halls_num: halls
+            }
+
+            // add a new Car record to the server
+            if (mode == "edit") {
+                let user_online = JSON.parse(localStorage.getItem("user_online"));
+                let user_name = company.User_name;
+                if (user_online.userName.localeCompare(companyToSave.User_name) == 0) {
+                    user_online.password = companyToSave.Password;
+                    localStorage.setItem("user_online", JSON.stringify(user_online));
+                }
+                ajaxCall("PUT", "../api/Companies", JSON.stringify(companyToSave), updateSuccess, error);
+            }
+
+
+        }
+        // if the ajaxcall for uploading the image failed, write to the console
+        function PostImageECB(err) {
+            console.log(err);
+        }
+        // fill the form fields
+        function populateFields(id) {
+            company = getCompany(id);
+            let countries = document.getElementById("country").options;
+            let str = "";
+            $("#username").val(company.User_name);
+            $("#username").prop("disabled", "disabled");
+            $("#password").val(company.Password);
+            $("#password_v").val(company.Password);
+            $("#Company_Name").val(company.Company_name);
+
+            $("#year").val(company.Year);
+            $("#halls").val(company.Halls_num);
+            str += "<img src = '../" + company.Image_path + "'/>";
+            $("#div_img").html(str);
+            $("#country").val(company.Country_id);
+        }
+        // get a company according to its Id
+        function getCompany(id) {
+            for (i in companies) {
+                if (companies[i].Id == id)
+                    return companies[i];
+            }
+            return null;
+        }
+        // success callback function after update
+        function updateSuccess(companiesdata) {
+            companies = companiesdata;
+            tbl.clear();
+            redrawTable(tbl, companiesdata);
+            buttonEvents();
+            $("#editDiv").hide();
+            swal("Updated Successfuly!", "Great Job", "success");
+            mode = "";
+        }
+        // success callback function after delete
+        function deleteSuccess(companiesdata) {
+            companies = companiesdata;
+            tbl.clear();
+            redrawTable(tbl, companiesdata);
+            buttonEvents(); // after redrawing the table, we must wire the new buttons
+            $("#editDiv").hide();
+            swal("Deleted Successfuly!", "Great Job", "success");
+            mode = "";
+        }
+        // redraw a datatable with new data
+        function redrawTable(tbl, data) {
+            tbl.clear();
+            for (var i = 0; i < data.length; i++) {
+                tbl.row.add(data[i]);
+            }
+            tbl.draw();
+            $(".imageBtn").prop("disabled", false);
+        }
+        // this function is activated in case of a success
+        function getSuccess(companiesData) {
+            companies = companiesData; // keep the cars array in a global variable;
+            try {
+                tbl = $('#companiesTable').DataTable({
+                    data: companiesData,
+                    pageLength: 5,
+                    columns: [
+                        {
+                            render: function (data, type, row, meta) {
+                                let dataCompany = "data-companyId='" + row.Id + "'";
+
+                                editBtn = "<button type='button' class = 'editBtn btn btn-success' " + dataCompany + "> Edit </button>";
+                                viewBtn = "<button type='button' class = 'viewBtn btn btn-info' " + dataCompany + "> View </button>";
+                                deleteBtn = "<button type='button' class = 'deleteBtn btn btn-danger' " + dataCompany + "> Delete </button>";
+                                return editBtn + viewBtn + deleteBtn;
+                            }
+                        },
+                        { data: "Id" },
+                        { data: "User_name" },
+                        { data: "Company_name" },
+                        {
+                            render: function (data, type, row, meta) {
+                                let dataImage = "data-imageId='" + row.Id + "'";
+                                let image = "<input type='button' class = 'imageBtn btn btn-info' " + dataImage + "value = 'click to show' onclick = 'imageClick(" + row.Id + ")'>";
+                                return image;
+                            }
+                        },
+                        { data: "Country_name" },
+                        { data: "Year" },
+                        { data: "Halls_num" }
+                    ],
+                });
+
+            }
+
+            catch (err) {
+                alert(err);
+            }
+        }
+        // this function is activated in case of a failure
+        function error(err) {
+            swal("Error: " + err);
+        }
+        // function for showing the image of the company
+        function imageClick(index) {
+            let imageBtn = document.getElementsByClassName("imageBtn");
+            let button = imageBtn[index - 1];
+            if (show == true) {
+                button.value = "click to show";
+                $("#showImage").hide();
+                show = false;
+            }
+
+            else {
+                let tmpCompany = companies[index - 1];
+                let str = "<img src = '../" + tmpCompany.Image_path + "'/>";
+                button.value = "click to hide";
+                $("#showImage").html(str);
+                $("#showImage").show();
+                show = true;
+            }
+        }
+
+    </script>
+
+</head>
+<body>
+    <script>
+        if (localStorage.getItem("user_online") == undefined) {
+            localStorage.setItem("direct", "edit_delete.html");
+            window.location.href = "Login.html";
+        }
+    </script>
+    <header>
+        <h1 class="logo">Edit</h1>
+        <div class="col" id="manu">
+            <nav>
+                <ul>
+                    <li><a href="insert.html">Search</a></li>
+                    <li><a href="viewMovie.html">View</a></li>
+                    <li><a href="edit_delete.html">Edit</a></li>
+                    <li><a href="Login.html">Log Out</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <form id="pForm">
+            <table id="companiesTable" class="display nowrap" style="width:100%">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Id</th>
+                        <th>Username</th>
+                        <th>Company name</th>
+                        <th>Image</th>
+                        <th>Country name</th>
+                        <th>Creation year</th>
+                        <th>Number of halls</th>
+                    </tr>
+                </thead>
+            </table>
+
+            <div id="showImage"></div>
+        </form>
+
+        <div id="editDiv">
+            <form id="Form">
+                <div class="form-group row">
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="username"><span class="red-star">★ </span>Username</label>
+                        <input type="text" class="form-control" id="username" placeholder="Enter the username" pattern="^[a-zA-Z{0-9}]+$"
+                               oninvalid="this.setCustomValidity('username should be consist only from letters and numbers (no spaces)')"
+                               oninput="this.setCustomValidity('')" required>
+                    </div>
+
+
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="password"><span class="red-star">★ </span>Password</label>
+                        <input type="password" class="form-control" id="password" placeholder="Enter the password" required>
+                    </div>
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="password_validation"><span class="red-star">★ </span>Password Validation</label>
+                        <input type="password" class="form-control" id="password_v" placeholder="Enter the password again" required>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="Company_Name"><span class="red-star">★ </span>Company Name</label>
+                        <input type="text" class="form-control" id="Company_Name" placeholder="Enter the company name" required>
+                    </div>
+
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="halls"><span class="red-star">★ </span>Number of cinema halls</label>
+                        <input type="number" min="1" class="form-control" id="halls" placeholder="Enter the number" required />
+                    </div>
+
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="country"><span class="red-star">★ </span>Company Country</label>
+                        <br />
+                        <select id="country" required>
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="year"><span class="red-star">★ </span>Year</label>
+                        <br />
+                        <select id="year" required>
+                            <option value=""></option>
+                        </select>
+                    </div>
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <label for="logo"><span class="red-star">★ </span>Upload Company Logo</label>
+                        <br />
+                        <input type="file" id="logo" name="files" required />
+                    </div>
+
+                    <div class="form-group col-sm-3 col-lg-4">
+                        <div class="card" id="div_img"></div>
+                    </div>
+
+
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" id="saveBTN">Save</button>
+                <input type="button" class="btn btn-warning btn-lg" id="cancelSaveBTN" value="Cancel" />
+            </form>
+        </div>
+
+    </div>
+
+
+
+
+</body>
+</html>

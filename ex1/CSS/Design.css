@@ -1,0 +1,141 @@
+﻿@import url('https://fonts.googleapis.com/css?family=Work+Sans:400,600');
+
+body {
+    margin: 0;
+    background-color: #daeefc;
+    font-family: 'Work Sans', sans-serif;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1;
+    background-color: #1d1d48;
+    color: white;
+    font-weight: 800;
+}
+
+    header::after {
+        content: '';
+        display: table;
+        clear: both;
+    }
+
+.logo {
+    text-transform: uppercase;
+    font-weight: bold;
+    padding: 10px 0;
+    text-align: center;
+}
+
+nav {
+    text-align: center;
+}
+
+    nav ul {
+        padding: 0;
+        list-style: none;
+    }
+
+    nav li {
+        display: inline-block;
+        margin-left: 30px;
+        padding-top: 23px;
+        position: relative;
+        right: 20px;
+    }
+
+    nav a {
+        color: white;
+        text-decoration: none;
+        text-transform: uppercase;
+        font-size: 14px;
+    }
+
+        nav a:hover {
+            color: white;
+        }
+
+        nav a::before {
+            content: '';
+            display: block;
+            height: 5px;
+            background-color: white;
+            position: absolute;
+            top: 0;
+            width: 0%;
+            transition: all ease-in-out 250ms;
+        }
+
+        nav a:hover::before {
+            width: 100%;
+        }
+
+.container {
+    text-align: center;
+    direction: ltr;
+    margin: auto;
+    margin-top: 200px;
+    font-size: 14px;
+    display: block;
+}
+
+.container_signup {
+    direction: ltr;
+    font-size: 14px;
+    margin: auto;
+    text-align: center;
+    margin-top: 200px;
+}
+
+.card {
+    width: 18rem;
+    margin: auto;
+}
+
+.card-body {
+    background-color: #daeefc;
+}
+
+#upper {
+    text-align:center;
+}
+
+input[type="text"], input[type="password"], input[type="number"] {
+    max-width: 350px;
+    display: block;
+    margin: 0 auto;
+}
+    img {
+    height: 300px;
+    border-radius: 3px 4px;
+}
+
+button {
+    border-radius: 3px 4px;
+    background-color: lightblue;
+    font-weight: bold;
+}
+
+#movieName {
+    display: inline-block;
+}
+
+
+input {
+    background-color: lightblue;
+    font-weight: bold;
+}
+
+div label{
+    width:350px;
+    text-align:left;
+}
+
+#year, #country {
+    width: 350px;
+}
+

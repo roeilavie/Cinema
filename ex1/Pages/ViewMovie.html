@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+            integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+            crossorigin="anonymous"></script>
+
+    <link href="../CSS/Design.css" rel="stylesheet" />
+    <link href="../CSS/animationDesign.css" rel="stylesheet" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <script src="../Scripts/animation.js"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+    <style>
+        #contentMovie {
+            text-align: left;
+        }
+    </style>
+    <title>View Movies</title>
+
+    <script>
+        //ajaxcall for taking information from the server
+        $(document).ready(function () {
+            localStorage.removeItem("direct");
+            ajaxCall("GET", "../api/Movies", "", ReadSCB, ReadECB);
+        });
+        //if the call succeeded, insert the movies to the list
+        function ReadSCB(movies) {
+            let moviesList = document.getElementById("moviesList");
+            for (var i = 0; i < movies.length; i++) {
+                let option = document.createElement("option");
+                option.value = movies[i].Id;
+                option.text = movies[i].Name;
+                moviesList.appendChild(option);
+            }
+        }
+        //if the call failed, show the error in the console
+        function ReadECB(err) {
+            console.log(err);
+        }
+        //if the movie chosen, do the ajaxcall for render the details of the movie
+        function Show() {
+            let moviesList = document.getElementById("moviesList");
+            let id = moviesList.options[moviesList.selectedIndex].value;
+
+            if (id == "") {
+                swal("Please choose a movie", "", "error");
+                return;
+            }
+
+            $("#movieDiv").animate({
+                height: '400px',
+                display: 'none'
+            });
+            ajaxCall("GET", `../api/Movies/${id}`, "", readMovieSCB, readMovieECB);
+        }
+        //if the ajaxcall succeeded, render the movie to the screen
+        function readMovieSCB(movie) {
+            let str = "", str1 = "";
+            let movieDiv = document.getElementById("movieDiv");
+            str += "<div class = 'card'>";
+            str += `<img class = 'card-img-top' src = '${movie.Img}' alt = 'Card image cap'/>`;
+            str += "<div class = 'card-body'>";
+            str += `<h4 class = 'card-title'><b> ${movie.Name} </b></h4></div></div>`;
+            $("#imgMovie").html(str);
+
+            str1 += `<p><b>Overview: </b>${movie.Description}</p>`;
+            str1 += `<p><b>Release Date: </b>${movie.Release_date}</br>`;
+            str1 += `<b>Genere: </b>` + movie.Genere + "<br/>";
+
+
+            str1 += `<b>Vote average: </b>${movie.Vote_average}</p>`;
+            $("#contentMovie").html(str1);
+            animation(movieDiv);
+        }
+        //if the call failed, show the error in the console
+        function readMovieECB(err) {
+            console.log(err);
+        }
+    </script>
+</head>
+<body>
+    <script>
+        if (localStorage.getItem("user_online") == undefined) {
+            localStorage.setItem("direct", "ViewMovie.html");
+            window.location.href = "Login.html";
+        }
+    </script>
+    <header>
+        <h1 class="logo">View</h1>
+        <div class="col" id="manu">
+            <nav>
+                <ul>
+                    <li><a href="insert.html">Search</a></li>
+                    <li><a href="viewMovie.html">View</a></li>
+                    <li><a href="edit_delete.html">Edit</a></li>
+                    <li><a href="Login.html">Log Out</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="row">
+            <div class="col" id="upper">
+                <span class="col">
+                    <select id="moviesList">
+                        <option value="">Choose movie</option>
+                    </select>
+                </span>
+                <span class="col">
+                    <button id="MovieChosen" onclick="Show()">Show the movie</button>
+                </span>
+            </div>
+        </div>
+        <div class="row" id="movieDiv">
+            <div class="col-lg-4 col-md-12 mt-5" id="imgMovie"></div>
+            <div class="col-lg-8 col-md-12 mt-5" id="contentMovie"></div>
+        </div>
+    </div>
+</body>
+</html>

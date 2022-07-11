@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+            integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+            crossorigin="anonymous"></script>
+    <title>Search Movies</title>
+
+    <link href="../CSS/animationDesign.css" rel="stylesheet" />
+    <link href="../CSS/Design.css" rel="stylesheet" />
+    <script src="../Scripts/animation.js"></script>
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+
+    <script>
+        //the event of click when the user want to search for a movie
+        $(document).ready(function () {
+            localStorage.removeItem("direct");
+            $("#getMovie").click(getMovieByName);
+        });
+        //ajax call for get the movie from the server
+        function getMovieByName() {
+            if ($("#movieName").val() == "") {
+                swal("Please write the name of the movie", "", "error")//swal it nice alert for the user
+                return;
+            }
+
+            let name = $("#movieName").val();
+            let key = "adfd17f9a51faf7a16e08ecb5bff1866";
+            let apiCall = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${name}`;
+            ajaxCall("GET", apiCall, "", getMovieByNameSuccessCB, getMovieByNameErrorCB);
+        }
+        //if the ajax call succeed do the success function, show the movies
+        function getMovieByNameSuccessCB(movies) {
+            movies = movies.results;
+            let ph = document.getElementById("ph");
+            let str = "";
+            let path = "https://image.tmdb.org/t/p/original";
+            for (var i = 0; i < movies.length; i++) {
+                let src = path + movies[i].poster_path;
+                let title = movies[i].title;
+                str += "<div class='col-lg-4 col-md-6 mt-5'>";
+                str += "<div class = 'card' id = " + movies[i].id + ">";
+                str += edit(movies[i], src, title);
+                str += "</div ></div >";
+            }
+            ph.innerHTML = str;
+            animation(ph);
+        }
+        //if the ajax call failed write to the console
+        function getMovieByNameErrorCB(err) {
+            console.log(err);
+        }
+        //if the user click on the details button, we do the ajax call again with the id
+        function getMovieById(id) {
+            let key = "adfd17f9a51faf7a16e08ecb5bff1866";
+            let apiCall = `https://api.themoviedb.org/3/movie/${id}?api_key=${key}`;
+            ajaxCall("GET", apiCall, "", getMovieByIdSuccessCB, getMovieByIdErrorCB);
+        }
+        //if the ajax call succedded do the success function, show the details of the movie
+        //create the add button, if the user press on add the movie with all the details send by using by post call to the server for saving the movie
+        //close button for close the details of the movie when we click on him
+        function getMovieByIdSuccessCB(movie) {
+
+            let path = "https://image.tmdb.org/t/p/original";
+            let str_genres = "";
+
+            for (var i = 0; i < movie.genres.length; i++) {
+                str_genres += movie.genres[i].name;
+                if (i + 1 != movie.genres.length)
+                    str_genres += ", ";
+            }
+
+            let movie_D = {
+                Id: movie.id,
+                Name: movie.title,
+                Description: movie.overview,
+                Genere: str_genres,
+                Release_Date: movie.release_date,
+                Img: path + movie.poster_path,
+                Vote_average: movie.vote_average,
+            }
+
+            str = "<p><b>Overview:</b> " + movie_D.Description + "</p>";
+            str += "<p><b>Release date:</b> " + movie_D.Release_Date + "</br>";
+            str += "<b>Genre:</b> " + str_genres;
+
+            str += "</br><b>Vote average: " + movie.vote_average + "</b></p>";
+            str += "<p><button id = 'addButton" + movie_D.Id + "'>Add</button> ";
+            str += "<button id = 'close" + movie_D.Id + "'>Close</button></p>";
+
+            let p_movie = document.getElementById("p" + movie_D.Id);
+            p_movie.innerHTML = str;
+            animation(p_movie);
+            $("#d" + movie_D.Id).remove();
+
+            $("#addButton" + movie_D.Id).click(function () {
+                let user_online = JSON.parse(localStorage.getItem("user_online"));
+                let user_name = user_online.userName;
+                let api = `../api/Movies/${movie_D}/Post/${user_name}`;
+                ajaxCall("POST", api, JSON.stringify(movie_D), postSCB, postECB);
+            });
+
+            $("#close" + movie_D.Id).click(function () {
+                let src = movie_D.Img;
+                let title = movie_D.Name;
+                let str = edit(movie, src, title);
+                $("#p" + movie.id).fadeOut(function () {
+                    $("#" + movie_D.Id).html(str);
+                });
+            });
+
+        }
+        //if the ajax call failed write to the console
+        function getMovieByIdErrorCB() {
+            console.log("its an error");
+        }
+        //if the post call succeed alert to the user
+        function postSCB(movie) {
+            swal("The movie saved", "", "success");
+        }
+        //if the post call failed write to the console
+        function postECB(err) {
+            console.log(err);
+        }
+        //edit function build the body of the card
+        function edit(movie, src, title) {
+            let str = "";
+            str += `<img class = 'card-img-top' src = '${src}' alt = 'Card image cap'/>`;
+            str += "<div class = 'card-body'>";
+            str += `<h4 class = 'card-title'><b> ${title} </b></h4>`;
+            str += "<button onclick = 'getMovieById(" + movie.id + ")' id = 'd" + movie.id + "'>Details</button > ";
+            str += "<p class='card-text' id = 'p" + movie.id + "'></div>";
+            return str;
+        }
+
+    </script>
+</head>
+<body>
+    <script>
+        if (localStorage.getItem("user_online") == undefined) {
+            localStorage.setItem("direct", "insert.html");
+            window.location.href = "Login.html";
+        }
+    </script>
+    <header>
+        <h1 class="logo">Search</h1>
+        <div class="col" id="manu">
+            <nav>
+                <ul>
+                    <li><a href="insert.html">Search</a></li>
+                    <li><a href="viewMovie.html">View</a></li>
+                    <li><a href="edit_delete.html">Edit</a></li>
+                    <li><a href="Login.html">Log Out</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="container">
+        <div class="mt-3">
+            <div class="col" id="upper">
+                <input type="text" id="movieName" />
+                <button id="getMovie">Search a movie</button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row mt-3" id="ph">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

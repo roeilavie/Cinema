@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+            integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+            crossorigin="anonymous"></script>
+
+    <title>Sign Up</title>
+    <link href="../CSS/Design.css" rel="stylesheet" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+    <script src="../Scripts/init.js"></script>
+    <style>
+        .red-star {
+            color: red;
+        }
+
+        #div_img {
+            text-align: center;
+        }
+
+            #div_img img {
+                width: 200px;
+                height: 200px;
+            }
+    </style>
+    <script>
+        //ajax call for the counties
+        $(document).ready(function () {
+            localStorage.removeItem("user_online");
+            $("#Form").submit(submit_form);
+            init();
+        });
+        //actions that happen when the user press on submit
+        function submit_form() {
+            var data = new FormData();
+            var files = $("#logo").get(0).files;
+
+            // Add the uploaded file to the form data collection
+            if (files.length > 0) {
+                for (f = 0; f < files.length; f++) {
+                    data.append("UploadedImage", files[f]);
+                }
+                data.append("name", $("#Company_Name").val()); // aopend what ever data you want to send along with the files. See how you extract it in the controller.
+            }
+
+            // Ajax upload
+            $.ajax({
+                type: "POST",
+                url: "../api/FileUpload",
+                contentType: false,
+                processData: false,
+                data: data,
+                success: PostImageSCB,
+                error: PostImageECB
+            });
+
+            return false;
+        }
+        //if the ajaxcall for sign up succceeded, alert to the user
+        function PostSCB(company) {
+            if (company != null) {
+                let user_online = {
+                    userName: company.User_name,
+                    password: company.Password
+                }
+                localStorage.setItem("user_online", JSON.stringify(user_online));
+                swal("Successful sign up", "", "success").then(function () {
+                    window.location.href = "insert.html";
+                });
+            }
+            else {
+                swal("Username already exist", "", "error");
+            }
+        }
+        //if the ajaxcall for sign up failed, write to the console
+        function PostECB(err) {
+            console.log(err);
+        }
+        //if the ajaxcall for uploading the image succeeded, write to the console
+        function PostImageSCB(path) {
+            let countries = document.getElementById("country");
+            let years = document.getElementById("year");
+            let country = countries.options[countries.selectedIndex];
+            let year = years.options[years.selectedIndex].value;
+            var halls = document.getElementById("halls").value;
+
+            //building company object and sending it to the server by ajax post call
+            Company = {
+                User_name: $("#user_name").val(),
+                Password: $("#password").val(),
+                Company_name: $("#Company_Name").val(),
+                Image_path: path[0],
+                Country_name: country.text,
+                Country_id: country.value,
+                Year: year,
+                Halls_num: halls
+            }
+
+            ajaxCall("POST", "../api/Companies", JSON.stringify(Company), PostSCB, PostECB);
+
+        }
+        //if the ajaxcall for uploading the image failed, write to the console
+        function PostImageECB(err) {
+            console.log(err);
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1 class="logo">Sign Up</h1>
+        <div class="col" id="manu">
+            <nav>
+                <ul>
+                    <li><a href="Login.html">Login</a></li>
+                    <li><a href="SignUp.html">Sign Up</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="container_signup">
+        <form action="" id="Form">
+            <div class="form-group">
+                <label for="User_Name"><span class="red-star">★ </span>User Name</label>
+                <input type="text" class="form-control" id="user_name" placeholder="Enter the user name"  pattern="^[a-zA-Z{0-9}]+$"
+                       oninvalid="this.setCustomValidity('username should be consist only from letters and numbers (no spaces)')"
+                       oninput="this.setCustomValidity('')" required>
+            </div>
+            <div class="form-group">
+                <label for="password"><span class="red-star">★ </span>Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter the password" required>
+            </div>
+            <div class="form-group">
+                <label for="password_validation"><span class="red-star">★ </span>Password Validation</label>
+                <input type="password" class="form-control" id="password_v" placeholder="Enter the password again" required>
+            </div>
+            <div class="form-group">
+                <label for="Company_Name"><span class="red-star">★ </span>Company Name</label>
+                <input type="text" class="form-control" id="Company_Name" placeholder="Enter the company name" required>
+            </div>
+            <div>
+                <label for="logo"><span class="red-star">★ </span>Upload Company Logo</label>
+                <br />
+                <input type="file" id="logo" name="files" required />
+            </div><br/>
+            <div id="div_img">
+
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="country"><span class="red-star">★ </span>Company Country</label>
+                <br />
+                <select id="country" required>
+                    <option value=""></option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="halls"><span class="red-star">★ </span>Number of cinema halls</label>
+                <input type="number"  min="1" class="form-control" id="halls" placeholder="Enter the number" required />
+            </div>
+            <div class="form-group">
+                <label for="year"><span class="red-star">★ </span>Year</label>
+                <br />
+                <select id="year" required>
+                    <option value=""></option>
+                </select>
+            </div>
+
+            <div class="submit">
+                <input type="submit" value="Submit" id="submit" />
+            </div>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+            integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+            crossorigin="anonymous"></script>
+
+    <title>Login</title>
+    <link href="../CSS/Design.css" rel="stylesheet" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <script src="../Scripts/ajaxCalls.js"></script>
+    <style>
+        .red-star {
+            color: red;
+        }
+
+        #fail_connection {
+            color: red;
+            font-weight: bold;
+            visibility: hidden;
+        }
+    </style>
+
+    <script>
+        // will run when the document is ready
+        $(document).ready(function () {
+            localStorage.removeItem("user_online");
+            ajaxCall("GET", "../api/Companies", "", getSuccess, error);
+        });
+        // the form will check if the user in the system
+        function login_form() {
+            for (var i = 0; i < companies.length; i++) {
+                if (companies[i].User_name == $("#user_name").val() && companies[i].Password == $("#password").val()) {
+                    let user_online = {
+                        userName: companies[i].User_name,
+                        password: companies[i].Password
+                    }
+                    localStorage.setItem("user_online", JSON.stringify(user_online));
+                    let direct = localStorage.getItem("direct");
+                    localStorage.removeItem("direct");
+
+                    if (direct != undefined)
+                        window.location.href = direct;
+                    else 
+                        window.location.href = "insert.html";
+                    return false;
+                }
+            }
+            $("#fail_connection").css("visibility", "visible");
+            return false;
+        }
+        // if the ajax call succeeded wire the submit
+        function getSuccess(companiesData) {
+            companies = companiesData
+            $("#Form").submit(login_form);
+        }
+        // if the ajax call failed write to the console
+        function error(err) {
+            console.log(err);
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1 class="logo">Login</h1>
+        <div class="col" id="manu">
+            <nav>
+                <ul>
+                    <li><a href="Login.html">Login</a></li>
+                    <li><a href="SignUp.html">Sign Up</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <div class="container_signup">
+        <form action="" id="Form">
+            <div class="form-group">
+                <label for="User_Name"><span class="red-star">★ </span>User Name</label>
+                <input type="text" class="form-control" id="user_name" placeholder="Enter the user name" required>
+            </div>
+            <div class="form-group">
+                <label for="password"><span class="red-star">★ </span>Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter the password" required>
+            </div>
+            <div id="fail_connection">Incorrect username or password</div><br/>
+            <div class="submit">
+                <input type="submit" value="Login" id="submit" />
+            </div>
+            <img src= "../Images/login.png" />
+        </form>
+    </div>
+</body>
+</html>
